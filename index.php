@@ -149,11 +149,13 @@ if (isset($username)) {
                             echo "disabled";
                           } ?>
                           " href="profile.php?id=<?php echo $value->id;?>">View</a>
+
                           <a class="btn btn-info btn-sm
                           <?php if ($value->roleid == '1') {
                             echo "disabled";
                           } ?>
                           " href="profile.php?id=<?php echo $value->id;?>">Edit</a>
+                          
                         <?php }elseif(Session::get("id") == $value->id  && Session::get("roleid") == '3'){ ?>
                           <a class="btn btn-success btn-sm " href="profile.php?id=<?php echo $value->id;?>">View</a>
                           <a class="btn btn-info btn-sm " href="profile.php?id=<?php echo $value->id;?>">Edit</a>

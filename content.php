@@ -21,9 +21,9 @@
     </div>
 
     <div class="card-body">
-      <div style="width:600px; margin:0px auto" class="card-row">
+      <div style="width: 800px; margin: 0px auto;" class="card-row">
         <div class="card-avatar">
-          <img src="./image/download.jpg" alt="avatar" class="avatar-img">
+          <img src="./image/anhbia.jpg" alt="avatar" class="avatar-img">
         </div>
 
         <div class="card-info">

@@ -2,7 +2,8 @@
 
 include 'lib/Database.php';
 include_once 'lib/Session.php';
-
+include_once 'lib/Filter.php';
+ 
 
 class Users{
 
@@ -26,11 +27,13 @@ class Users{
 
   // Check Exist Email Address Method
   public function checkExistEmail($email){
-    $sql = "SELECT email from  tbl_users WHERE email = :email";
+    $sql = "SELECT * from  tbl_users WHERE email = :email";
     $stmt = $this->db->pdo->prepare($sql);
     $stmt->bindValue(':email', $email);
-     $stmt->execute();
+    $stmt->execute();
     if ($stmt->rowCount()> 0) {
+      $_SESSION['ok'] = $stmt->fetch();
+      $_SESSION['id_check_email'] = $_SESSION['ok']['id'];
       return true;
     }else{
       return false;
@@ -55,6 +58,11 @@ class Users{
 <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
 <strong>Error !</strong> Please, User Registration field must not be Empty !</div>';
         return $msg;
+    }elseif(Filter::CheckXss($username) != True){
+      $msg = '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
+  <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+  <strong>Error !</strong> Username is script</div>';
+        return $msg;
     }elseif (strlen($username) < 3) {
       $msg = '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
 <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
@@ -66,20 +74,20 @@ class Users{
 <strong>Error !</strong> Enter only Number Characters for Mobile number field !</div>';
         return $msg;
 
-    }elseif(strlen($password) < 5) {
+    }elseif(Filter::CheckLengtPass($password) != True) {
       $msg = '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
 <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
 <strong>Error !</strong> Password at least 6 Characters !</div>';
         return $msg;
-    }elseif(!preg_match("#[0-9]+#",$password)) {
+    }elseif(Filter::CheckNumberPass($password) != True) {
       $msg = '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
 <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
 <strong>Error !</strong> Your Password Must Contain At Least 1 Number !</div>';
         return $msg;
-    }elseif(!preg_match("#[a-z]+#",$password)) {
+    }elseif(Filter::CheckCharPass($password) != True) {
       $msg = '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
 <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-<strong>Error !</strong> Your Password Must Contain At Least 1 Number !</div>';
+<strong>Error !</strong> Your Password Must Contain At Least 1 Alphabet !</div>';
         return $msg;
     }elseif (filter_var($email, FILTER_VALIDATE_EMAIL === FALSE)) {
       $msg = '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
@@ -212,7 +220,7 @@ class Users{
 
   // Select All User Method
   public function selectAllUserData($roleid){
-    $sql = "SELECT * FROM tbl_users where roleid <= :roleid  ORDER BY id DESC";
+    $sql = "SELECT * FROM tbl_users where roleid >= :roleid  ORDER BY id DESC";
     $stmt = $this->db->pdo->prepare($sql);
     $stmt->bindValue(':roleid', $roleid);
     $stmt->execute();
@@ -493,18 +501,25 @@ class Users{
 
 
     // Change User pass By Id
-    public  function changePasswordBysingelUserId($userid, $data){
+    public  function changePasswordBysingelUserId($userid, $data) {
 
       $old_pass = $data['old_password'];
       $new_pass = $data['new_password'];
-
+      $renew_pass = $data['re_new_password'];
 
       if ($old_pass == "" || $new_pass == "" ) {
         $msg = '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
   <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
   <strong>Error !</strong> Password field must not be Empty !</div>';
           return $msg;
-      }elseif (strlen($new_pass) < 6) {
+      } elseif ( $new_pass != $renew_pass){
+        $msg = '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
+        <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+        <strong>Error !</strong>  Password did not matched !</div>';
+                return $msg;
+
+      }
+      elseif (Filter::CheckLengtPass($new_pass) != True) {
         $msg = '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
   <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
   <strong>Error !</strong> New password must be at least 6 character !</div>';
@@ -549,26 +564,147 @@ class Users{
     }
 
 
+    public function generate_password($POST, $length = 8){
 
-    public function generate_password($email="a", $length = 8){
+      // ini_set("SMTP","ssl://smtp.gmail.com");
+      // ini_set("smtp_port","25");
 
-      
 
-
-      $chars =  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.
-                '0123456789`-=~!@#$%^&*()_+,./<>?;:[]{}\|';
-    
-      $str = 'aaa';
+      $chars =  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      $str = '';
       $max = strlen($chars) - 1;
-    
+      
       for ($i=0; $i < $length; $i++)
         $str .= $chars[random_int(0, $max)];
 
-      echo '<script>console.log('.$email.');</script>';
-  
+      $email = $POST['email'];
+
+      if ($this->checkExistEmail($email) == True){
+        $pass = "Password moi cua ban la: ".$str;
+        $send = mail($email, "DAY LA MAIL SERVER", $pass);
+        if ($send == True){
+          echo "<script>location.href='confirmOtp.php';</script>";
+          Session::set('otp', $str);
+
+          $msg = '<div class="alert alert-success alert-dismissible mt-3" id="flash-msg">
+            <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+            Please check your email and fill in the otp code !!</div>';
+          return $msg;
+
+
+        }else{
+          echo "False";
+        }
+      }else{
+         $msg = '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
+                <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+                <strong>Error !</strong> Email not exist, use Register email !!!</div>';
+        return $msg;
+      }
+      
     }
 
+     // Check OTP password method
+
     
+    
+    // public  function confirmOtpByEmail($email, $data){
+    //     $otp_pass = $data ['otp_password'];
+
+    //     if ($otp_pass == "") {
+    //       $msg = '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
+    // <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+    // <strong>Error !</strong> OTP field must not be Empty !</div>';
+    //         return $msg;
+    //     }elseif (strlen($otp_pass) < 8){
+    //       $msg = '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
+    // <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+    // <strong>Error !</strong> Your OTP code is not correct, please check again !</div>';
+    //         return $msg;
+    //      }
+  
+    //        $otpPass = $this->CheckOtpPassword($email, $otp_pass);
+    //        if ($otpPass == FALSE) {
+    //          $msg = '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
+    //    <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+    //    <strong>Error !</strong> OTP password did not Matched !</div>';
+    //            return $msg;
+    //        }else{
+    //          $otp_pass = SHA1($otp_pass);
+    //          $sql = "UPDATE tbl_users SET
+  
+    //           password=:password
+    //           WHERE email = :email";
+  
+    //           $stmt = $this->db->pdo->prepare($sql);
+    //           $stmt->bindValue(':password', $otp_pass);
+    //           $stmt->bindValue(':email', $email);
+    //           $result =   $stmt->execute();
+  
+    //         if ($result) {
+    //           echo "<script>location.href='index.php';</script>";
+    //           Session::set('msg', '<div class="alert alert-success alert-dismissible mt-3" id="flash-msg">
+    //           <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+    //           <strong>Success !</strong> You have successfully logged in with OTP code !</div>');
+  
+    //         }else{
+    //           $msg = '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
+    //     <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+    //     <strong>Error !</strong> Your OTP code is not correct, please check again !</div>';
+    //             return $msg;
+    //         }
+  
+    //        }
+  
+  
+    // }
+    public function confirmOTP($otp){
+      $otp_sess = Session::get('otp');
+      if ($otp_sess == $otp){
+        $_SESSION['login'] = $_SESSION['id_check_email'];
+        header("location: changepassOtp.php");        
+
+      }else{
+        $msg = '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
+                <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+                <strong>False !</strong> OTP did not match !!!</div>';
+          return $msg;
+      }
+    }
+
+  //   public function generate_password($POST, $length = 8){
+
+  //  // ini_set("SMTP","ssl://smtp.gmail.com");
+  //  // ini_set("smtp_port","25");
 
 
+  //  $chars =  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.
+  //            '0123456789`-=~!@#$%^&*()_+,./<>?;:[]{}\|';
+  //  $str = '';
+  //  $max = strlen($chars) - 1;
+   
+  //  for ($i=0; $i < $length; $i++)
+  //    $str .= $chars[random_int(0, $max)];
+  //  $email = $POST['email'];
+  //  $status =  $this->checkExistEmail($email);
+  // //  sleep(10);
+  //  if ($status == TRUE){
+  //    $pass = "password moi la: ".$str;
+  //    $send = mail($email, "DAY LA SERVER", $pass);
+  //    if ($send == TRUE){
+  //      Session::set('otp', $str);
+  //      // return $email, True;
+  //      return TRUE;
+  //    }else{
+  //      return FALSE;
+  //    }
+  //  }else{
+  //     $msg = '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
+  //            <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+  //            <strong>Error !</strong> Email not exist!</div>';
+  //    return $msg;
+  //  }
+
+
+  //  }
 }

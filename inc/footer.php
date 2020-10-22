@@ -1,5 +1,5 @@
 <div class="well card-footer">
-  <p>© 1998-2020. Toàn bộ bản quyền thuộc vovanlinh98
+  <p>© 1998-2020. vovanlinh98
       <span class="float-right">Học viện Kĩ thuật mật mã</span>
   </p>
 </div>

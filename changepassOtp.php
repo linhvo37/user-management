@@ -1,3 +1,4 @@
+
 <?php
 include 'inc/header.php';
 Session::CheckSession();
@@ -12,6 +13,18 @@ Session::CheckSession();
 
 
  if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['changepass'])) {  
+   if (isset($_SESSION['id_check_email'])) {
+     $userid = $_SESSION['id_check_email'];
+     $_SESSION['id'] = $_SESSION['ok']['id'];
+     $_SESSION['roleid'] = $_SESSION['ok']['roleid'];
+     $_SESSION['name'] = $_SESSION['ok']['name'];
+     $_SESSION['email'] = $_SESSION['ok']['email'];
+     $_SESSION['username'] = $_SESSION['ok']['username'];
+      Session::set('logMsg', '<div class="alert alert-success alert-dismissible mt-3" id="flash-msg">
+    <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+    <strong>Success !</strong> You are Logged In Successfully !</div>');
+          echo "<script>location.href='index.php';</script>";
+   }
   $changePass = $users->changePasswordBysingelUserId($userid, $_POST);
   
  }
@@ -35,10 +48,6 @@ Session::CheckSession();
           <div style="width:600px; margin:0px auto">
 
           <form class="" action="" method="POST">
-              <div class="form-group">
-                <label for="old_password">Old Password</label>
-                <input type="password" name="old_password"  class="form-control">
-              </div>
               <div class="form-group">
                 <label for="new_password">New Password</label>
                 <input type="password" name="new_password"  class="form-control">

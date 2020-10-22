@@ -16,7 +16,7 @@ $users = new Users();
 
 ?>
 
-
+    
 
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
@@ -43,14 +43,13 @@ if (isset($_GET['action']) && $_GET['action'] == 'logout') {
 }
 
 
-
  ?>
 
 
     <div class="container">
 
       <nav class="navbar navbar-expand-md navbar-dark bg-dark card-header">
-        <a class="navbar-brand" href="index.php"><i class="fas fa-home mr-2"></i>Dashboard</a>
+        <a class="navbar-brand" href="index.php"><i class="fas fa-home mr-2"></i>Home</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
